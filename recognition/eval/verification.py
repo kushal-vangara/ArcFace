@@ -1,20 +1,20 @@
-"""Helper for evaluation on the Labeled Faces in the Wild dataset 
+"""Helper for evaluation on the Labeled Faces in the Wild dataset
 """
 
 # MIT License
-# 
+#
 # Copyright (c) 2016 David Sandberg
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,6 +27,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import os
 import argparse
 import sys
@@ -63,22 +64,22 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
     nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
     nrof_thresholds = len(thresholds)
     k_fold = LFold(n_splits=nrof_folds, shuffle=False)
-    
+
     tprs = np.zeros((nrof_folds,nrof_thresholds))
     fprs = np.zeros((nrof_folds,nrof_thresholds))
     accuracy = np.zeros((nrof_folds))
     indices = np.arange(nrof_pairs)
     #print('pca', pca)
-    
+
     if pca==0:
       diff = np.subtract(embeddings1, embeddings2)
       dist = np.sum(np.square(diff),1)
-    
+
     for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
         #print('train_set', train_set)
         #print('test_set', test_set)
         if pca>0:
-          print('doing pca on', fold_idx)
+          logging.info('doing pca on {}'.format(fold_idx))
           embed1_train = embeddings1[train_set]
           embed2_train = embeddings2[train_set]
           _embed_train = np.concatenate( (embed1_train, embed2_train), axis=0 )
@@ -92,7 +93,7 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
           #print(embed1.shape, embed2.shape)
           diff = np.subtract(embed1, embed2)
           dist = np.sum(np.square(diff),1)
-        
+
         # Find the best threshold for the fold
         acc_train = np.zeros((nrof_thresholds))
         for threshold_idx, threshold in enumerate(thresholds):
@@ -102,7 +103,7 @@ def calculate_roc(thresholds, embeddings1, embeddings2, actual_issame, nrof_fold
         for threshold_idx, threshold in enumerate(thresholds):
             tprs[fold_idx,threshold_idx], fprs[fold_idx,threshold_idx], _ = calculate_accuracy(threshold, dist[test_set], actual_issame[test_set])
         _, _, accuracy[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], dist[test_set], actual_issame[test_set])
-          
+
     tpr = np.mean(tprs,0)
     fpr = np.mean(fprs,0)
     return tpr, fpr, accuracy
@@ -113,30 +114,30 @@ def calculate_accuracy(threshold, dist, actual_issame):
     fp = np.sum(np.logical_and(predict_issame, np.logical_not(actual_issame)))
     tn = np.sum(np.logical_and(np.logical_not(predict_issame), np.logical_not(actual_issame)))
     fn = np.sum(np.logical_and(np.logical_not(predict_issame), actual_issame))
-  
+
     tpr = 0 if (tp+fn==0) else float(tp) / float(tp+fn)
     fpr = 0 if (fp+tn==0) else float(fp) / float(fp+tn)
     acc = float(tp+tn)/dist.size
     return tpr, fpr, acc
 
 
-  
+
 def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_target, nrof_folds=10):
     assert(embeddings1.shape[0] == embeddings2.shape[0])
     assert(embeddings1.shape[1] == embeddings2.shape[1])
     nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
     nrof_thresholds = len(thresholds)
     k_fold = LFold(n_splits=nrof_folds, shuffle=False)
-    
+
     val = np.zeros(nrof_folds)
     far = np.zeros(nrof_folds)
-    
+
     diff = np.subtract(embeddings1, embeddings2)
     dist = np.sum(np.square(diff),1)
     indices = np.arange(nrof_pairs)
-    
+
     for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
-      
+
         # Find the threshold that gives FAR = far_target
         far_train = np.zeros(nrof_thresholds)
         for threshold_idx, threshold in enumerate(thresholds):
@@ -146,9 +147,9 @@ def calculate_val(thresholds, embeddings1, embeddings2, actual_issame, far_targe
             threshold = f(far_target)
         else:
             threshold = 0.0
-    
+
         val[fold_idx], far[fold_idx] = calculate_val_far(threshold, dist[test_set], actual_issame[test_set])
-  
+
     val_mean = np.mean(val)
     far_mean = np.mean(far)
     val_std = np.std(val)
@@ -201,12 +202,12 @@ def load_bin(path, image_size):
         img = mx.ndarray.flip(data=img, axis=2)
       data_list[flip][i][:] = img
     if i%1000==0:
-      print('loading bin', i)
-  print(data_list[0].shape)
+      logging.info('loading bin {}'.format(i))
+  logging.info(data_list[0].shape)
   return (data_list, issame_list)
 
 def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_shape = None):
-  print('testing verification..')
+  logging.info('testing verification...')
   data_list = data_set[0]
   issame_list = data_set[1]
   model = mx_model
@@ -279,14 +280,14 @@ def test(data_set, mx_model, batch_size, nfolds=10, data_extra = None, label_sha
   #embeddings = np.concatenate(embeddings_list, axis=1)
   embeddings = embeddings_list[0] + embeddings_list[1]
   embeddings = sklearn.preprocessing.normalize(embeddings)
-  print(embeddings.shape)
-  print('infer time', time_consumed)
+  logging.info(embeddings.shape)
+  logging.info('infer time {}'.format(time_consumed))
   _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
   acc2, std2 = np.mean(accuracy), np.std(accuracy)
   return acc1, std1, acc2, std2, _xnorm, embeddings_list
 
 def test_badcase(data_set, mx_model, batch_size, name='', data_extra = None, label_shape = None):
-  print('testing verification badcase..')
+  logging.info('testing verification badcase...')
   data_list = data_set[0]
   issame_list = data_set[1]
   model = mx_model
@@ -335,21 +336,21 @@ def test_badcase(data_set, mx_model, batch_size, name='', data_extra = None, lab
   nrof_pairs = min(len(actual_issame), embeddings1.shape[0])
   nrof_thresholds = len(thresholds)
   k_fold = LFold(n_splits=nrof_folds, shuffle=False)
-  
+
   tprs = np.zeros((nrof_folds,nrof_thresholds))
   fprs = np.zeros((nrof_folds,nrof_thresholds))
   accuracy = np.zeros((nrof_folds))
   indices = np.arange(nrof_pairs)
-  
+
   diff = np.subtract(embeddings1, embeddings2)
   dist = np.sum(np.square(diff),1)
   data = data_list[0]
 
   pouts = []
   nouts = []
-  
+
   for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
-       
+
       # Find the best threshold for the fold
       acc_train = np.zeros((nrof_thresholds))
       #print(train_set)
@@ -380,14 +381,14 @@ def test_badcase(data_set, mx_model, batch_size, name='', data_extra = None, lab
           else:
             nouts.append( (imga, imgb, _dist, best_threshold, ida) )
 
-        
+
   tpr = np.mean(tprs,0)
   fpr = np.mean(fprs,0)
   acc = np.mean(accuracy)
   pouts = sorted(pouts, key = lambda x: x[2], reverse=True)
   nouts = sorted(nouts, key = lambda x: x[2], reverse=False)
-  print(len(pouts), len(nouts))
-  print('acc', acc)
+  logging.info('{} {}'.format(len(pouts), len(nouts)))
+  logging.info('acc {}'.format(acc))
   gap = 10
   image_shape = (112,224,3)
   out_dir = "./badcases"
@@ -397,7 +398,7 @@ def test_badcase(data_set, mx_model, batch_size, name='', data_extra = None, lab
     threshold = nouts[0][3]
   else:
     threshold = pouts[-1][3]
-  
+
   for item in [(pouts, 'positive(false_negative).png'), (nouts, 'negative(false_positive).png')]:
     cols = 4
     rows = 8000
@@ -433,7 +434,7 @@ def test_badcase(data_set, mx_model, batch_size, name='', data_extra = None, lab
       imgb = out[1].copy()
       if outi in hack:
         idx = out[4]
-        print('noise idx',idx)
+        logging.info('noise idx {}'.format(idx))
         aa = hack[outi]
         imgb = cv2.imread(aa)
         #if aa==1:
@@ -462,7 +463,7 @@ def test_badcase(data_set, mx_model, batch_size, name='', data_extra = None, lab
     cv2.imwrite(filename, img)
 
 def dumpR(data_set, mx_model, batch_size, name='', data_extra = None, label_shape = None):
-  print('dump verification embedding..')
+  logging.info('dump verification embedding...')
   data_list = data_set[0]
   issame_list = data_set[1]
   model = mx_model
@@ -524,7 +525,7 @@ if __name__ == '__main__':
 
   prop = face_image.load_property(args.data_dir)
   image_size = prop.image_size
-  print('image_size', image_size)
+  logging.info('image_size {}'.format(image_size))
   ctx = mx.gpu(args.gpu)
   nets = []
   vec = args.model.split(',')
@@ -548,10 +549,10 @@ if __name__ == '__main__':
 
   else:
     epochs = [int(x) for x in vec[1].split('|')]
-  print('model number', len(epochs))
+  logging.info('model number {}'.format(len(epochs)))
   time0 = datetime.datetime.now()
   for epoch in epochs:
-    print('loading',prefix, epoch)
+    logging.info('loading {} {}'.format(prefix, epoch))
     sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
     #arg_params, aux_params = ch_dev(arg_params, aux_params, ctx)
     all_layers = sym.get_internals()
@@ -563,14 +564,14 @@ if __name__ == '__main__':
     nets.append(model)
   time_now = datetime.datetime.now()
   diff = time_now - time0
-  print('model loading time', diff.total_seconds())
+  logging.info('model loading time {}'.format(diff.total_seconds()))
 
   ver_list = []
   ver_name_list = []
   for name in args.target.split(','):
     path = os.path.join(args.data_dir,name+".bin")
     if os.path.exists(path):
-      print('loading.. ', name)
+      logging.info('loading.. '.format(name))
       data_set = load_bin(path, image_size)
       ver_list.append(data_set)
       ver_name_list.append(name)
@@ -580,11 +581,11 @@ if __name__ == '__main__':
       results = []
       for model in nets:
         acc1, std1, acc2, std2, xnorm, embeddings_list = test(ver_list[i], model, args.batch_size, args.nfolds)
-        print('[%s]XNorm: %f' % (ver_name_list[i], xnorm))
-        print('[%s]Accuracy: %1.5f+-%1.5f' % (ver_name_list[i], acc1, std1))
-        print('[%s]Accuracy-Flip: %1.5f+-%1.5f' % (ver_name_list[i], acc2, std2))
+        logging.info('[{}]XNorm: {:f}' % (ver_name_list[i], xnorm))
+        logging.info('[{}]Accuracy: {:.5f}+-{:.5f}'.format(ver_name_list[i], acc1, std1))
+        logging.info('[{}]Accuracy-Flip: {:.5f}+-{:.5f}'.format(ver_name_list[i], acc2, std2))
         results.append(acc2)
-      print('Max of [%s] is %1.5f' % (ver_name_list[i], np.max(results)))
+      logging.info('Max of [{}] is {:.5f}'.format(ver_name_list[i], np.max(results)))
   elif args.mode==1:
     model = nets[0]
     test_badcase(ver_list[0], model, args.batch_size, args.target)

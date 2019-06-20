@@ -140,12 +140,12 @@ def main(args):
 
 def parse_arguments(argv):
   parser = argparse.ArgumentParser()
-  
-  parser.add_argument('--facescrub-noises', type=str, help='', default='./data/facescrub_noises.txt')
-  parser.add_argument('--megaface-noises', type=str, help='', default='./data/megaface_noises.txt')
+
+  parser.add_argument('--facescrub-noises', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/facescrub_noises.txt')
+  parser.add_argument('--megaface-noises', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/megaface_noises.txt')
   parser.add_argument('--algo', type=str, help='', default='insightface')
-  parser.add_argument('--facescrub-lst', type=str, help='', default='./data/facescrub_lst')
-  parser.add_argument('--megaface-lst', type=str, help='', default='./data/megaface_lst')
+  parser.add_argument('--facescrub-lst', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/facescrub_lst')
+  parser.add_argument('--megaface-lst', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/megaface_lst')
   parser.add_argument('--feature-dir-input', type=str, help='', default='./feature_out')
   parser.add_argument('--feature-dir-out', type=str, help='', default='./feature_out_clean')
   return parser.parse_args(argv)

@@ -21,7 +21,7 @@ from mxnet import ndarray as nd
 
 
 def read_img(image_path):
-  img = cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+  img = cv2.imread(image_path, cv2.IMREAD_COLOR)
   return img
 
 def get_feature(imgs, nets):
@@ -161,15 +161,15 @@ def main(args):
 
 def parse_arguments(argv):
   parser = argparse.ArgumentParser()
-  
+
   parser.add_argument('--batch_size', type=int, help='', default=8)
   parser.add_argument('--image_size', type=str, help='', default='3,112,112')
   parser.add_argument('--gpu', type=int, help='', default=0)
   parser.add_argument('--algo', type=str, help='', default='insightface')
-  parser.add_argument('--facescrub-lst', type=str, help='', default='./data/facescrub_lst')
-  parser.add_argument('--megaface-lst', type=str, help='', default='./data/megaface_lst')
-  parser.add_argument('--facescrub-root', type=str, help='', default='./data/facescrub_images')
-  parser.add_argument('--megaface-root', type=str, help='', default='./data/megaface_images')
+  parser.add_argument('--facescrub-lst', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/facescrub_lst')
+  parser.add_argument('--megaface-lst', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/megaface_lst')
+  parser.add_argument('--facescrub-root', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/facescrub_images')
+  parser.add_argument('--megaface-root', type=str, help='', default='/afs/crc.nd.edu/user/v/valbiero/ext_vol2/testing_datasets/megaface/megaface_images')
   parser.add_argument('--output', type=str, help='', default='./feature_out')
   parser.add_argument('--model', type=str, help='', default='')
   return parser.parse_args(argv)

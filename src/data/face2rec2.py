@@ -99,7 +99,7 @@ def image_encode(args, i, item, q_out):
         img = face_preprocess.preprocess(img, bbox = item.bbox, landmark=item.landmark, image_size='%d,%d'%(args.image_h, args.image_w))
         s = mx.recordio.pack_img(header, img, quality=args.quality, img_fmt=args.encoding)
         q_out.put((i, s, oitem))
-    else: 
+    else:
       header = mx.recordio.IRHeader(item.flag, item.label, item.id, 0)
       #print('write', item.flag, item.id, item.label)
       s = mx.recordio.pack(header, '')
